@@ -74,7 +74,7 @@ class KNearestNeighbor(object):
         #####################################################################
         dists[i,j] = np.linalg.norm(X[i,:]-self.X_train[j,:])
         #####################################################################
-        #                       END OF YOUR CODE                            #
+		#                       END OF YOUR CODE                            #
         #####################################################################
     return dists
 
@@ -99,7 +99,7 @@ class KNearestNeighbor(object):
       #                         END OF YOUR CODE                            #
       #######################################################################
     return dists
-
+    
   def compute_distances_no_loops(self, X):
     """
     Compute the distance between each test point in X and each training point
@@ -123,11 +123,11 @@ class KNearestNeighbor(object):
     #       and two broadcast sums.                                         #
     #########################################################################
     M = np.dot(X, self.X_train.T)
-    #print M.shape
+    print M.shape
     te = np.square(X).sum(axis=1)
-    #print te.shape
+    print te.shape
     tr = np.square(self.X_train).sum(axis=1)
-    #print tr.shape
+    print tr.shape
     a = -2 * M + tr + np.matrix(te).T
     dists = np.sqrt(a)
     dists = np.array(dists)
