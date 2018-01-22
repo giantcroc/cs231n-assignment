@@ -32,7 +32,9 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
   # hidden state and any values you need for the backward pass in the next_h   #
   # and cache variables respectively.                                          #
   ##############################################################################
-  pass
+  local_sum = np.dot(x,Wx)+np.dot(prev_h,Wh)+b
+  next_h = tanh(local_sum)
+  cache = (x,prev_h,Wx,Wh,b,local_sum)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -50,7 +52,7 @@ def rnn_step_backward(dnext_h, cache):
   Returns a tuple of:
   - dx: Gradients of input data, of shape (N, D)
   - dprev_h: Gradients of previous hidden state, of shape (N, H)
-  - dWx: Gradients of input-to-hidden weights, of shape (N, H)
+  - dWx: Gradients of input-to-hidden weights, of shape (D, H)
   - dWh: Gradients of hidden-to-hidden weights, of shape (H, H)
   - db: Gradients of bias vector, of shape (H,)
   """
@@ -61,7 +63,15 @@ def rnn_step_backward(dnext_h, cache):
   # HINT: For the tanh function, you can compute the local derivative in terms #
   # of the output value from tanh.                                             #
   ##############################################################################
-  pass
+  (x, prev_h, Wx, Wh, b, local_sum) = cache
+  temp = sigmoid(2*local_sum)
+  dtanh_local = 2*temp*(1-temp)*2
+  dtanh = dtanh_local*dnext_h
+  dx = np.dot(dtanh,Wx.T)
+  dprev_h = np.dot(dtanh,Wh.T)
+  dWx = np.dot(x.T,dtanh)
+  dWh = np.dot(prev_h.T, dtanh)
+  db = np.sum(dtanh,axis=0)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -92,7 +102,14 @@ def rnn_forward(x, h0, Wx, Wh, b):
   # input data. You should use the rnn_step_forward function that you defined  #
   # above.                                                                     #
   ##############################################################################
-  pass
+  (N, T, D) = x.shape
+  (N,H) = h0.shape
+  h = np.zeros((N,T,H))
+  cache = []
+  for i in range(T):
+    h0,cache1 = rnn_step_forward(x[:,i,:],h0,Wx,Wh,b)
+    h[:,i,:] = h0
+    cache.append(cache1)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -119,7 +136,15 @@ def rnn_backward(dh, cache):
   # sequence of data. You should use the rnn_step_backward function that you   #
   # defined above.                                                             #
   ##############################################################################
-  pass
+  (N,T,H) = dh.shape
+  (N,D) = cache[0][0].shape
+  dx = np.zeros((N,T,D))
+  dx[:, T-1, :], dh0, dWx, dWh, db = rnn_step_backward(dh[:, T-1, :], cache[T-1])
+  for i in reversed(range(T-1)):
+    dx[:,i,:], dh0, dWx_, dWh_, db_ = rnn_step_backward(dh[:,i,:]+dh0,cache[i])
+    dWx += dWx_
+    dWh += dWh_
+    db += db_
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -147,7 +172,19 @@ def word_embedding_forward(x, W):
   #                                                                            #
   # HINT: This should be very simple.                                          #
   ##############################################################################
-  pass
+  """
+  (N,T) = x.shape
+  (V,D) = W.shape
+  xx = np.zeros((N,T,V))
+  for i in range(N):
+    for j in range(T):
+      xx[i,j,x[i,j]] = 1
+  xx = xx.reshape((-1,V))
+  out = np.dot(xx,W)
+  out = out.reshape((N,T,D))
+  """
+  out = W[x,:]
+  cache = (x,W)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -175,7 +212,9 @@ def word_embedding_backward(dout, cache):
   #                                                                            #
   # HINT: Look up the function np.add.at                                       #
   ##############################################################################
-  pass
+  (x,W) = cache
+  dW = np.zeros_like(W)
+  np.add.at(dW,x,dout)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -195,7 +234,8 @@ def sigmoid(x):
   top[neg_mask] = z[neg_mask]
   return top / (1 + z)
 
-
+def tanh(x):
+  return 2*sigmoid(2*x)-1
 def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   """
   Forward pass for a single timestep of an LSTM.
