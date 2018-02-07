@@ -1,10 +1,9 @@
 import urllib2, os, tempfile
 
 import numpy as np
-from scipy.misc import imread
+from scipy.misc import imread, imresize
 
 from cs231n.fast_layers import conv_forward_fast
-
 
 """
 Utility functions used for viewing and processing images.
@@ -114,3 +113,19 @@ def image_from_url(url):
     print 'URL Error: ', e.reason, url
   except urllib2.HTTPError as e:
     print 'HTTP Error: ', e.code, url
+
+def load_image(filename, size=None):
+    """Load and resize an image from disk.
+
+    Inputs:
+    - filename: path to file
+    - size: size of shortest dimension after rescaling
+    """
+    img = imread(filename)
+    if size is not None:
+        orig_shape = np.array(img.shape[:2])
+        min_idx = np.argmin(orig_shape)
+        scale_factor = float(size) / orig_shape[min_idx]
+        new_shape = (orig_shape * scale_factor).astype(int)
+        img = imresize(img, scale_factor)
+    return img
